@@ -9,6 +9,7 @@ from .generic_transformer import GenericTransformer
 from .pcap_transformer import PCAPTransformer
 from .procmon_transformer import ProcmonTransformer
 from .sysmon_transformer import SysmonTransformer
+from .evtx_json_transformer import WinEVTXJsonTransformer
 
 __all__ = [
     "Transformer",
@@ -20,4 +21,5 @@ __all__ = [
     "PCAPTransformer",
     "SysmonTransformer",
     "DRAPATCTransformer",
+    "WinEVTXJsonTransformer"
 ]
