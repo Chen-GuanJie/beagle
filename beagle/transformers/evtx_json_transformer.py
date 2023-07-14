@@ -7,17 +7,14 @@ from beagle.transformers.base_transformer import Transformer
 
 
 class WinEVTXJsonTransformer(Transformer):
-
     name = "Win EVTX json"
 
     def __init__(self, *args, **kwargs) -> None:
-
         super().__init__(*args, **kwargs)
 
         logger.info("Created Windows EVTX json Transformer.")
 
     def transform(self, event: dict) -> Optional[Tuple]:
-
         # Track which processese we've seen
         self.seen_procs: Dict[int, Process] = {}
 
@@ -27,8 +24,8 @@ class WinEVTXJsonTransformer(Transformer):
             return self.process_creation(event)
         # elif event_id == 4656:
         #     return self.request_object(event)
-        # elif event_id == 4663:
-        #     return self.access_object(event)
+        elif event_id == 4663:
+            return self.access_object(event)
         # # elif event_id == 4660:
         # #     return self.delete_object(event)
         # elif event_id == 4657:
@@ -68,6 +65,7 @@ class WinEVTXJsonTransformer(Transformer):
             process_image_path=proc_path,
             command_line=event.get("data_name_commandline"),
         )
+        child.name = event["New Process Name"]
 
         child_file = child.get_file_node()
         child_file.file_of[child]
@@ -80,18 +78,18 @@ class WinEVTXJsonTransformer(Transformer):
         if parent is None:
             # Create a dummy proc. If we haven't already seen the parent
             parent = Process(host=event["Account Name"], process_id=parent_pid)
-
+            # parent.name=str(parent_pid)
         parent.launched[child].append(timestamp=event["Time"])
 
         # Don't need to pull out the parent's file, as it will have always
         # been created before being put into seen_procs
 
-        return (child,  parent)
+        return (child, parent)
 
-    def request_object(self,event: dict) -> Tuple[Process, File, Process]:
+    def request_object(self, event: dict) -> Tuple[Process, File, Process]:
         proc_pid = int(event["Process ID"], 16)
         proc_name, proc_path = split_path(event["Process Name"])
-        proc=Process(
+        proc = Process(
             host=event["Account Name"],
             process_id=proc_pid,
             user=event["Account Domain"],
@@ -100,30 +98,32 @@ class WinEVTXJsonTransformer(Transformer):
             command_line=event.get("data_name_commandline"),
         )
 
-        proc_file = proc.get_file_node()
-        proc_file.file_of[proc]
+        # proc_file = proc.get_file_node()
+        proc.name = event["Process Name"]
+        # proc_file.file_of[proc]
         file_name, file_path = split_path(event["Object Name"])
         target_file = File(file_name=file_name, file_path=file_path)
 
         proc.accessed[target_file].append(timestamp=event["Time"])
 
-        return (proc, proc_file,target_file)
+        return (proc, target_file)
 
-    def access_object(self,event:dict):
+    def access_object(self, event: dict):
         proc_pid = int(event["Process ID"], 16)
         proc_name, proc_path = split_path(event["Process Name"])
-        proc=Process(
+        proc = Process(
             host=event["Account Name"],
             process_id=proc_pid,
             user=event["Account Domain"],
             process_image=proc_name,
             process_image_path=proc_path,
         )
-
+        proc.name = event["Process Name"]
         proc_file = proc.get_file_node()
         proc_file.file_of[proc]
         file_name, file_path = split_path(event["Object Name"])
         target_file = File(file_name=file_name, file_path=file_path)
+        target_file.name = event["Object Name"]
         if "ReadData" in event["Accesses"]:
             proc.loaded[target_file].append(timestamp=event["Time"])
             return (proc, target_file)
@@ -134,10 +134,11 @@ class WinEVTXJsonTransformer(Transformer):
             proc.deleted[target_file].append(timestamp=event["Time"])
             return (proc, target_file)
         return None
-    def modify_registry(self,event:dict):
+
+    def modify_registry(self, event: dict):
         proc_pid = int(event["Process ID"], 16)
         proc_name, proc_path = split_path(event["Process Name"])
-        proc=Process(
+        proc = Process(
             host=event["Account Name"],
             process_id=proc_pid,
             user=event["Account Domain"],
@@ -160,7 +161,7 @@ class WinEVTXJsonTransformer(Transformer):
             key_path=key_path,
             key=key,
             value=event.get(event["NewValue"]),
-            value_type=event.get(event["NewValueType"])
+            value_type=event.get(event["NewValueType"]),
         )
 
         if reg_node.value:
@@ -168,4 +169,4 @@ class WinEVTXJsonTransformer(Transformer):
         else:
             proc.changed_value[reg_node]
 
-        return (proc,  reg_node)
+        return (proc, reg_node)
