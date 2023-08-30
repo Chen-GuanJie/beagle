@@ -74,7 +74,10 @@ class NetworkX(Backend):
 
         # De-duplicate nodes.
         self.nodes = dedup_nodes(self.nodes)
-
+        id = 0
+        for node in self.nodes:
+            node.id = id
+            id = id + 1
         for node in self.nodes:
             # Insert the node into the graph.
             # This also takes care of edges.

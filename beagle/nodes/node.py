@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Tuple
 class Node(object, metaclass=ABCMeta):
     """Base Node class. Provides an interface which each Node must implement"""
 
+    __id__ = None
     __name = None
     __name__ = "Node"
     __color__ = "#FFFFFF"
@@ -15,6 +16,13 @@ class Node(object, metaclass=ABCMeta):
     def __init_subclass__(cls, **kwargs):
         if "key_fields" not in cls.__annotations__:
             raise RuntimeError(f"A Node sublcass **must** contain the key_fields annotation")
+    @property
+    def id(self):
+        return self.__id__
+
+    @id.setter
+    def id(self, n):
+        self.__id__ = n
 
     @property
     def name(self):

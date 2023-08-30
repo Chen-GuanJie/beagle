@@ -43,7 +43,7 @@ class ProcmonCSV(DataSource):
                 minute=int(hr_min_sec.split(":")[1]),
             )
 
-            epoch = int(date.strftime("%s"))
+            epoch = int(date.strftime("%S"))
 
             yield {
                 "event_time": epoch,
